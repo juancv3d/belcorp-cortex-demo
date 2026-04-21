@@ -1,0 +1,62 @@
+-- ============================================================================
+-- QUERY 2: Combinaciones marca-categoria por debajo del must-have
+-- Ticket: DST-847 | Criterio de Aceptacion #2
+-- Tablas: METAS_CAMPANA, VENTAS, PRODUCTOS, CAMPANAS, MARCAS, CATEGORIAS
+-- ============================================================================
+
+WITH ultimas_campanas AS (
+    SELECT CAMPANA_ID, PAIS, ANIO, NUMERO_CAMPANA
+    FROM BELCORP_ANALYTICS.COMERCIAL.CAMPANAS
+    WHERE ESTADO = 'Finalizada'
+      AND FECHA_FIN >= (
+          SELECT MIN(FECHA_FIN) FROM (
+              SELECT DISTINCT FECHA_FIN
+              FROM BELCORP_ANALYTICS.COMERCIAL.CAMPANAS
+              WHERE ESTADO = 'Finalizada'
+              ORDER BY FECHA_FIN DESC
+              LIMIT 6
+          )
+      )
+),
+
+ventas_reales AS (
+    SELECT
+        v.CAMPANA_ID,
+        p.MARCA_ID,
+        p.CATEGORIA_ID,
+        SUM(v.INGRESO_NETO) AS VENTA_REAL
+    FROM BELCORP_ANALYTICS.COMERCIAL.VENTAS v
+    JOIN BELCORP_ANALYTICS.COMERCIAL.PRODUCTOS p ON v.PRODUCTO_ID = p.PRODUCTO_ID
+    WHERE v.CAMPANA_ID IN (SELECT CAMPANA_ID FROM ultimas_campanas)
+    GROUP BY v.CAMPANA_ID, p.MARCA_ID, p.CATEGORIA_ID
+),
+
+cumplimiento AS (
+    SELECT
+        c.PAIS,
+        c.NUMERO_CAMPANA,
+        m.NOMBRE_MARCA,
+        cat.NOMBRE_CATEGORIA,
+        mc.MUST_HAVE_VENTA,
+        COALESCE(vr.VENTA_REAL, 0) AS VENTA_REAL,
+        CASE WHEN COALESCE(vr.VENTA_REAL, 0) < mc.MUST_HAVE_VENTA THEN 1 ELSE 0 END AS BAJO_MUST_HAVE
+    FROM BELCORP_ANALYTICS.COMERCIAL.METAS_CAMPANA mc
+    JOIN ultimas_campanas c   ON mc.CAMPANA_ID = c.CAMPANA_ID
+    JOIN BELCORP_ANALYTICS.COMERCIAL.MARCAS m      ON mc.MARCA_ID = m.MARCA_ID
+    JOIN BELCORP_ANALYTICS.COMERCIAL.CATEGORIAS cat ON mc.CATEGORIA_ID = cat.CATEGORIA_ID
+    LEFT JOIN ventas_reales vr ON mc.CAMPANA_ID = vr.CAMPANA_ID
+        AND mc.MARCA_ID = vr.MARCA_ID
+        AND mc.CATEGORIA_ID = vr.CATEGORIA_ID
+)
+
+SELECT
+    NOMBRE_MARCA,
+    NOMBRE_CATEGORIA,
+    PAIS,
+    COUNT(*)              AS TOTAL_CAMPANAS,
+    SUM(BAJO_MUST_HAVE)   AS CAMPANAS_BAJO_MUST_HAVE,
+    ROUND(SUM(BAJO_MUST_HAVE) / COUNT(*) * 100, 1) AS PCT_INCUMPLIMIENTO
+FROM cumplimiento
+GROUP BY NOMBRE_MARCA, NOMBRE_CATEGORIA, PAIS
+HAVING SUM(BAJO_MUST_HAVE) > 0
+ORDER BY PCT_INCUMPLIMIENTO DESC, NOMBRE_MARCA, NOMBRE_CATEGORIA;
