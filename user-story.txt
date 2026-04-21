@@ -1,0 +1,17 @@
+Hola equipo de datos,
+
+Necesitamos un reporte para el equipo comercial que muestre las top 10 consultoras con mayor ingreso neto en la ultima campana cerrada.
+
+El reporte debe incluir:
+- Nombre de la consultora
+- Zona y region
+- Segmento (Nueva, Baja, Media, Alta)
+- Total de unidades vendidas
+- Ingreso neto total
+- Ganancia total
+- Desglose por marca (Esika, L'Bel, Cyzone)
+
+Esto lo necesitamos para identificar a las consultoras estrella y replicar sus estrategias en zonas de bajo rendimiento.
+
+Gracias,
+Equipo Comercial Belcorp
