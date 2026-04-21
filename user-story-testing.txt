@@ -1,0 +1,80 @@
+HISTORIA DE USUARIO FUNCIONAL
+
+1. INFORMACION GENERAL
+
+TICKET DE NEGOCIO:     DST-912
+EQUIPO SOLICITANTE:    Data Strategy / Quality Assurance
+CONTACTO DE NEGOCIO:   Product Owner: @Andrea Lopez
+EQUIPO TECNICO:        Tech Lead: @Pendiente de asignacion
+TIPO DE REQUERIMIENTO: Validacion y Certificacion de Datos
+FECHA CREACION:        18 Abr 2026
+
+2. HISTORIA FUNCIONAL
+
+2.1 Contexto (AS-IS)
+
+El equipo de Data Strategy esta preparando el deploy de nuevas transformaciones sobre la tabla
+CONSULTORAS y la tabla VENTAS hacia produccion (schema PRD). Actualmente, el ambiente de
+desarrollo (schema DEV) contiene una version parcial de los datos que fue cargada durante la
+fase de desarrollo.
+
+Antes de promover los cambios a produccion, se requiere una validacion exhaustiva que compare
+la estructura y los datos entre ambos ambientes para identificar discrepancias que puedan
+generar errores en los procesos downstream.
+
+No se cuenta con un proceso automatizado de validacion cross-environment. Las comparaciones
+se realizan manualmente mediante queries ad-hoc, lo cual es lento, propenso a errores y no
+genera evidencia auditable.
+
+2.2 Objetivo del Analisis
+
+2.2.1 Resultado Esperado
+
+Ejecutar una validacion automatizada entre el ambiente DEV (BELCORP_ANALYTICS.DEV) y
+PRD (BELCORP_ANALYTICS.PRD) que cubra:
+
+- Comparacion de estructura (columnas, tipos de datos)
+- Comparacion de volumetria (conteo de registros por tabla)
+- Deteccion de data drift en registros compartidos (campos que difieren entre ambientes)
+- Validacion de integridad referencial
+- Generacion de reporte de evidencia con hallazgos
+
+2.2.2 Usuarios Objetivo
+
+El equipo de QA, el Tech Lead responsable del deploy, y el equipo de Data Governance.
+
+2.2.3 Decision Habilitada
+
+- Aprobar o rechazar el deploy a produccion basado en evidencia
+- Identificar campos que requieren sincronizacion antes del deploy
+- Documentar discrepancias conocidas y aceptadas vs. discrepancias criticas
+
+2.3 Criterios de Aceptacion
+
+2.3.1 Alcance de la Validacion
+
+N  | Validacion Requerida                                         | Tablas           | Ambiente Referencia | Criterio de Exito
+1  | Comparacion de estructura: columnas y tipos de datos         | CONSULTORAS      | PRD vs DEV          | Listado de diferencias
+   | entre DEV y PRD                                              |                  |                     | de esquema documentadas
+2  | Comparacion de volumetria: conteo de registros por tabla     | CONSULTORAS,     | PRD vs DEV          | Reporte con % de
+   | en ambos ambientes                                           | VENTAS, CAMPANAS |                     | diferencia por tabla
+3  | Deteccion de data drift: para registros con mismo ID,        | CONSULTORAS      | PRD vs DEV          | Listado de campos con
+   | identificar campos con valores diferentes                    |                  |                     | drift y % de afectacion
+4  | Validacion de completitud: identificar registros presentes   | CONSULTORAS,     | PRD vs DEV          | Conteo de registros
+   | en PRD pero ausentes en DEV y viceversa                      | VENTAS           |                     | faltantes por tabla
+5  | Reporte consolidado de hallazgos con clasificacion           | Todas            | PRD vs DEV          | Documento con hallazgos
+   | de severidad (Critico / Advertencia / Info)                  |                  |                     | clasificados
+
+2.3.2 Presentacion de Resultados
+
+- Reporte de validacion con hallazgos clasificados por severidad
+- Evidencia de ejecucion de cada test
+- Query reproducible para cada validacion
+- Integracion con PR para trazabilidad
+
+2.4 Medicion del Incremento de Valor
+
+Categoria | Metrica                                    | Estrategia de Medicion                          | Criterio de Exito
+Value     | Defectos detectados antes del deploy       | Conteo de discrepancias criticas identificadas  | >= 1 defecto critico detectado
+Speed     | Tiempo de validacion cross-environment     | Comparacion vs validacion manual                | Reduccion >= 70%
+Quality   | Cobertura de validacion                    | % de tablas y campos validados                  | >= 90% de tablas cubiertas
