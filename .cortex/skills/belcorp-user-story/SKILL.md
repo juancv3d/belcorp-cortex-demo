@@ -109,9 +109,40 @@ Toma el input del usuario y refinalo generando un documento con la estructura of
 
 ---
 
-## Fase 2: Historia Tecnica + SQL
+## Fase 2: Revision de Codigo Existente + Historia Tecnica
 
-Usa `sql_execute` con DESCRIBE para inspeccionar las tablas reales de Snowflake. Genera:
+### Paso 2a: Revision de SQL Existente
+
+**ANTES de escribir SQL nuevo**, busca archivos SQL existentes en `sql/` usando Glob o Read:
+
+1. **Lee cada archivo SQL** encontrado en `sql/`
+2. **Inspecciona las tablas reales** de Snowflake con DESCRIBE para cada tabla referenciada
+3. **Compara el SQL contra la historia de usuario** y las tablas reales
+4. **Identifica errores** presentandolos en una tabla:
+
+```markdown
+## REVISION DE CODIGO EXISTENTE
+
+### Errores Detectados
+
+| # | Linea | Error | Tipo | Impacto | Correccion |
+|---|-------|-------|------|---------|------------|
+| 1 | [num] | [descripcion del error] | Compilacion/Logica/Datos | [que causa] | [como se corrige] |
+```
+
+Tipos de errores a buscar:
+- **Compilacion**: columnas inexistentes, nombres de tabla incorrectos, sintaxis invalida
+- **Logica**: filtros con valores incorrectos (ej: estado de campana), periodos equivocados, JOINs inadecuados
+- **Datos**: literales que no matchean los datos reales (ej: acentos, mayusculas), campos faltantes que pide la historia
+- **Completitud**: columnas requeridas por la historia que no estan en el SELECT, clasificaciones que no usan los campos correctos
+
+5. **Corrige el SQL** editando el archivo existente con la herramienta Edit (NO crear archivo nuevo)
+6. **Ejecuta el SQL corregido** para validar que funciona
+7. **Muestra un resumen antes/despues** de cada correccion
+
+### Paso 2b: Historia Tecnica
+
+Genera el documento tecnico:
 
 ```markdown
 # DEFINICION TECNICA
@@ -121,30 +152,28 @@ Usa `sql_execute` con DESCRIBE para inspeccionar las tablas reales de Snowflake.
 |-------|-------------|-------------------|
 | [tabla] | [descripcion] | [columnas] |
 
-## TRANSFORMACIONES REQUERIDAS
-1. [Paso de transformacion]
-2. [Paso de transformacion]
+## ERRORES CORREGIDOS EN SQL EXISTENTE
+| # | Error | Correccion | Linea |
+|---|-------|------------|-------|
+| [num] | [error] | [fix] | [linea] |
 
 ## LOGICA DE NEGOCIO
 - [Regla 1]
 - [Regla 2]
 
-## SUPUESTOS
-- [Supuesto 1]
-- [Supuesto 2]
-
-## SQL PROPUESTO
-[Query SQL completo y funcional contra BELCORP_ANALYTICS]
+## SQL CORREGIDO Y VALIDADO
+[Referencia al archivo corregido en sql/]
 ```
 
 ### Reglas para Historia Tecnica
 - Usar tablas reales de `BELCORP_ANALYTICS.COMERCIAL`
-- Proponer SQL funcional y optimizado para Snowflake
+- **Siempre revisar SQL existente antes de generar nuevo**
+- Corregir archivos existentes con Edit, no crear archivos nuevos
 - **EJECUTAR el SQL** contra Snowflake para validar que funciona y mostrar resultados
 - Si el SQL falla, corregirlo y re-ejecutar
 - Listar todos los supuestos explicitamente
 
-**En modo completo**: Guarda en `docs/historia_tecnica.md`, guarda el SQL en `sql/`, y continua a Fase 3.
+**En modo completo**: Guarda en `docs/historia_tecnica.md`, guarda el SQL corregido en `sql/`, y continua a Fase 3.
 
 ---
 
@@ -189,13 +218,21 @@ Genera casos de prueba alineados al formato de Criterios de Aceptacion de Belcor
 Usando `gh` CLI via Bash, crea una propuesta de cambios:
 
 1. **Crear branch**: `git checkout -b feature/[nombre-descriptivo]`
-2. **Agregar archivos generados**: Los archivos de `docs/`, `sql/` y `tests/`
-3. **Commit**: Con mensaje descriptivo que referencie la historia
+2. **Agregar archivos modificados y generados**: SQL corregido + docs/ + tests/
+3. **Commit**: Con mensaje descriptivo que referencie la historia y los errores corregidos
 4. **Push**: `git push -u origin [branch]`
-5. **Crear PR**: Usando `gh pr create` con body que incluya:
-   - Historia de usuario (resumen)
-   - Archivos propuestos (tabla)
-   - Resultados de tests (tabla)
-   - Confirmacion de SQL validado
+5. **Obtener el diff**: Ejecuta `git diff main...HEAD` para capturar los cambios exactos
+6. **Crear PR**: Usando `gh pr create` con body que incluya:
+   - Resumen de la historia de usuario
+   - Tabla de errores detectados y corregidos (con numero de linea)
+   - Cambios clave en formato antes/despues:
+     ```
+     Antes: WHERE ESTADO = 'Cerrada'
+     Despues: WHERE ESTADO = 'Finalizada'
+     ```
+   - Resultados de tests (tabla con PASS/FAIL)
+   - Archivos modificados y nuevos
+
+**IMPORTANTE para el body del PR**: No uses apostrofes (`'`), acentos ni caracteres especiales en el body del PR ya que pueden causar errores de shell. Usa comillas dobles para el body completo.
 
 **En modo completo**: Muestra el URL del PR creado como resultado final.
